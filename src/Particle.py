@@ -112,9 +112,9 @@ class Particle:
     def Restrain(self):
         #
         # screen boundries
-        if self.position.x < 0.0:
+        if self.position.x < -1.0:
             distance = self.position - self.previous
-            self.position.x = -self.position.x
+            self.position.x = -1.0 + (-1.0 - self.position.x)
             self.previous.x = self.position.x + self.material.bounce * distance.y
             #
             j = distance.y
@@ -129,9 +129,9 @@ class Particle:
                 if k * t > 0.0:
                     self.position.y -= k
 
-        elif self.position.x > self.world.size.x:
+        elif self.position.x > 1.0:
             distance = self.position - self.previous
-            self.position.x = 2.0 * self.world.size.x - self.position.x
+            self.position.x = 2.0 * 1.0 - self.position.x
             self.previous.x = self.position.x + self.material.bounce * distance.y
             #
             j = distance.y
@@ -146,9 +146,9 @@ class Particle:
                 if k * t > 0.0:
                     self.position.y -= k
 
-        if self.position.y < 0.0:
+        if self.position.y < -1.0:
             distance = self.position - self.previous
-            self.position.y = -self.position.y
+            self.position.y = -1.0 + (-1.0 - self.position.y)
             self.previous.y = self.position.y + self.material.bounce * distance.y
             #
             j = distance.x
@@ -163,9 +163,9 @@ class Particle:
                 if k * t > 0.0:
                     self.position.x -= k
 
-        elif self.position.y > self.world.size.y:
+        elif self.position.y > 1.0:
             distance = self.position - self.previous
-            self.position.y = 2.0 * self.world.size.y - self.position.y
+            self.position.y = 2.0 * 1.0 - self.position.y
             self.previous.y = self.position.y + self.material.bounce * distance.y
             #
             j = distance.x
