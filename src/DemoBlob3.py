@@ -3,19 +3,21 @@ import pygame as game
 
 from App import *
 from VerletPhysics import *
+from Manipulator import Manipulator
 
 
-def pixel_to_world(position, world):
-    return 2.0*position.x/(2.0*world.hsize.x) - 1.0, (2.0*position.y/(2.0*world.hsize.y) - 1.0)
+def pixel_to_world(pixel, world):
+    # i,j => x, y
+    return 2.0*pixel.x/(2.0*world.hsize.x) - 1.0, -(float(pixel.y)/world.hsize.y - 1.0)
 
 
 def world_to_pixel(position, world):
-    return int((position.x + 1.0)*(2.0*world.hsize.x)/2.0), int((position.y + 1.0)*(2.0*world.hsize.y)/2.0)
+    return int((position.x + 1.0)*(2.0*world.hsize.x)/2.0), int((position.y + 1.0)*world.hsize.y)
 
 
 class DemoBlob(App):
     #
-    world    = World(Vector(630.0, 470.0), Vector(0, 2), 6)
+    world    = World(Vector(600.0, 600.0), Vector(0, 2), 6)
     blob     = world.AddComposite()
     blobsize = 0.25
     #
@@ -34,6 +36,7 @@ class DemoBlob(App):
         # @param    b   coefficient of restitution [0.0, 1.0]
         mat = Material(1.0, 0.2, 0.9)
         self.world.gravity = Vector(0., 0.)
+        self.manipulator = Manipulator(position=Vector(0, -0.5), direction=Vector(0, 1), length=0.6, width=0.2)
 
         outer = []
         kinex = []
@@ -91,13 +94,18 @@ class DemoBlob(App):
 
         pos = world_to_pixel(Vector(-1, 1), self.world)
         game.draw.circle(self.screen, (255, 0, 0), pos, 10, 0)
+
+        self.manipulator.render(self.screen, lambda pos: world_to_pixel(pos, self.world))
+
         game.display.update()
 
     #
     def ClosestPoint(self):
         mouse    = Vector(game.mouse.get_pos()[0], game.mouse.get_pos()[1])
+        print('mouse {} {}'.format(mouse.x, mouse.y))
         xy = pixel_to_world(mouse, self.world)
         mouse = Vector(xy[0], xy[1])
+        print(xy)
         closest  = None
         distance = float('inf')
         for particle in self.world.particles:
@@ -110,6 +118,6 @@ class DemoBlob(App):
 
 if __name__ == "__main__":
     print "Starting..."
-    app = DemoBlob("Loco Roco", 640, 480, 30)
+    app = DemoBlob("Loco Roco", 600, 600, 30)
     app.Run()
     print "Ending..."
