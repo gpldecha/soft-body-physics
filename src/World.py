@@ -23,6 +23,9 @@ class World:
     particles   = list()            # list of all particles being simulated
     constraints = list()            # list of all constraints being simulated
     composites  = list()            # list of all composite shapes being simulated
+    boundary_x = None
+    boundary_y = None
+    manipulator = None
 
 
     # Class constructor. Initialize the simulation world. Set global constants.
@@ -54,11 +57,12 @@ class World:
     def Simulate(self):
         for i in range(self.step):
             for particle in self.particles:
-                particle.Accelerate(self.gravity)
-                particle.Simulate()
+                # particle.Accelerate(self.gravity)
+                # particle.Simulate()
                 particle.Restrain()
                 particle.ResetForces()
             for constraint in self.constraints:
+                # constraint.RelaxNoForce()
                 constraint.Relax()
 
 
@@ -80,11 +84,10 @@ class World:
     # @param    p1          first particle to be constrained
     # @param    p2          second particle to be constrained
     # @param    s           constraint spring stiffness [0.0, 1.0]
-    # @param    d           distance constraint (default seperating distance)
     # @return   Constraint  object reference of the new constraint
     #
-    def AddConstraint(self, p1, p2, s, d=None):
-        constraint = Constraint(p1, p2, s, d)
+    def AddConstraint(self, p1, p2, s, is_membrane):
+        constraint = Constraint(p1, p2, s, is_membrane)
         self.constraints.append(constraint)
         return constraint
 

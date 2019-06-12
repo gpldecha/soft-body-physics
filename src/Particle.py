@@ -10,7 +10,7 @@ import math
 
 from Vector import *
 from Material import *
-
+from Colisions import *
 
 class Particle:
     #
@@ -20,7 +20,7 @@ class Particle:
     previous     = Vector(0.0, 0.0)  # previous time-step [t-dt] position
     velocity     = Vector(0.0, 0.0)  # [readme] particle velocity
     acceleration = Vector(0.0, 0.0)  # acceleration of the particle
-
+    contact      = None
 
     # Class constructor. Initialize the particle within the simulation world.
     #
@@ -34,10 +34,12 @@ class Particle:
         self.world    = world
         self.position = Vector(x, y)
         self.previous = Vector(x, y)
+        self.contact = None
         if material == None:
             self.material = Material()
         else:
             self.material = material
+        self.is_in_contact = False
 
 
     # Simulate this particle's motion. A mass of zero denotes that the particle is 'pinned', and
@@ -111,76 +113,11 @@ class Particle:
     #
     def Restrain(self):
         #
-        # screen boundries
-        if self.position.x < -1.0:
-            distance = self.position - self.previous
-            self.position.x = -1.0 + (-1.0 - self.position.x)
-            self.previous.x = self.position.x + self.material.bounce * distance.y
-            #
-            j = distance.y
-            k = distance.x * self.material.friction
-            t = j
-            if j != 0.0:
-                t /= abs(j)
-            if abs(j) <= abs(k):
-                if j * t > 0.0:
-                    self.position.y -= 2.0 * j
-            else:
-                if k * t > 0.0:
-                    self.position.y -= k
-
-        elif self.position.x > 1.0:
-            distance = self.position - self.previous
-            self.position.x = 2.0 * 1.0 - self.position.x
-            self.previous.x = self.position.x + self.material.bounce * distance.y
-            #
-            j = distance.y
-            k = distance.x * self.material.friction
-            t = j
-            if j != 0.0:
-                t /= abs(j)
-            if abs(j) <= abs(k):
-                if j * t > 0.0:
-                    self.position.y -= 2.0 * j
-            else:
-                if k * t > 0.0:
-                    self.position.y -= k
-
-        if self.position.y < -1.0:
-            distance = self.position - self.previous
-            self.position.y = -1.0 + (-1.0 - self.position.y)
-            self.previous.y = self.position.y + self.material.bounce * distance.y
-            #
-            j = distance.x
-            k = distance.y * self.material.friction
-            t = j
-            if j != 0.0:
-                t /= abs(j)
-            if abs(j) <= abs(k):
-                if j * t > 0.0:
-                    self.position.x -= 2.0 * j
-            else:
-                if k * t > 0.0:
-                    self.position.x -= k
-
-        elif self.position.y > 1.0:
-            distance = self.position - self.previous
-            self.position.y = 2.0 * 1.0 - self.position.y
-            self.previous.y = self.position.y + self.material.bounce * distance.y
-            #
-            j = distance.x
-            k = distance.y * self.material.friction
-            t = j
-            if j != 0.0:
-                t /= abs(j)
-            if abs(j) <= abs(k):
-                if j * t > 0.0:
-                    self.position.x -= 2.0 * j
-            else:
-                if k * t > 0.0:
-                    self.position.x -= k
-
-
-    #
-    # DIRTY FLAGS!
-    #
+        # screen boundaries
+        self.is_in_contact = False
+        if update_particle(self.position, self.previous, self.material, self.world.boundary_x, self.world.boundary_y):
+            self.is_in_contact = True
+            self.contact = Vector(self.position.x, self.position.y)
+        if self.world.manipulator.update_particle(self):
+            self.is_in_contact = True
+            self.contact = Vector(self.position.x, self.position.y)

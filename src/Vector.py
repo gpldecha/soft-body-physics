@@ -60,6 +60,18 @@ class Vector:
     def tuple(self):
         return (self.x, self.y)
 
+    def __getitem__(self, key):
+        if key == 0:
+            return self.x
+        if key == 1:
+            return self.y
+
+    def __setitem__(self, key, value):
+        if key == 0:
+            self.x = value
+        if key == 1:
+            self.y = value
+
     #
     def __copy__(self):
         return self.__class__(self.x, self.y)

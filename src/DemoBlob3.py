@@ -4,6 +4,7 @@ import pygame as game
 from App import *
 from VerletPhysics import *
 from Manipulator import Manipulator
+import numpy as np
 
 
 def pixel_to_world(pixel, world):
@@ -12,7 +13,7 @@ def pixel_to_world(pixel, world):
 
 
 def world_to_pixel(position, world):
-    return int((position.x + 1.0)*(2.0*world.hsize.x)/2.0), int((position.y + 1.0)*world.hsize.y)
+    return int((position[0] + 1.0)*(2.0*world.hsize.x)/2.0), int((-position[1] + 1.0)*world.hsize.y)
 
 
 class DemoBlob(App):
@@ -28,53 +29,69 @@ class DemoBlob(App):
     #
     def Initialize(self):
         #
-        k = 0.8
+        k_outer = 0.9
+        k_inner = 0.1
         steps = 40
 
         #
         # @param    f   coefficient of friction [0.0, 1.0]
         # @param    b   coefficient of restitution [0.0, 1.0]
-        mat = Material(1.0, 0.2, 0.9)
+        mat = Material(1.0, 0.0, 1.0)
+
         self.world.gravity = Vector(0., 0.)
-        self.manipulator = Manipulator(position=Vector(0, -0.5), direction=Vector(0, 1), length=0.6, width=0.2)
+        self.world.boundary_x = [-1.0, 1.0]
+        self.world.boundary_y = [-1.0, 1.0]
+
+        self.world.manipulator = Manipulator(position=Vector(0, 0.5), orientation=-np.pi/2.0, length=0.6, width=0.2)
 
         outer = []
         kinex = []
 
         # outer skin
         for i in range(steps):
-            x = self.blobsize * math.cos(i * (2.0 * math.pi) / steps)
-            y = self.blobsize * math.sin(i * (2.0 * math.pi) / steps)
+            x = self.blobsize * math.cos(i * (2.0 * math.pi) / steps + np.pi/2)
+            y = self.blobsize * math.sin(i * (2.0 * math.pi) / steps + np.pi/2)
             outer.append(self.world.AddParticle(x, y, mat))
 
         # connect outer skin
         for i in range(1, steps):
-            kinex.append(self.world.AddConstraint(outer[i-1], outer[i], k))
-        kinex.append(self.world.AddConstraint(outer[len(outer)-1], outer[0], k))
+            kinex.append(self.world.AddConstraint(outer[i-1], outer[i], k_outer, is_membrane=True))
+        kinex.append(self.world.AddConstraint(outer[len(outer)-1], outer[0], k_outer, is_membrane=True))
+
+        # connect inner skin
         for i in range(steps / 2):
             to = i + steps / 2
             if to >= steps:
                 to -= steps
-            kinex.append(self.world.AddConstraint(outer[i], outer[to], k))
+            kinex.append(self.world.AddConstraint(outer[i], outer[to], k_inner, is_membrane=False))
 
         self.blob.AddParticles(outer)
         self.blob.AddConstraints(kinex)
 
     #
     def Update(self):
-        if game.mouse.get_pressed()[0]:
-            if self.grabbed == None:
-                closest = self.ClosestPoint()
-                if closest[1] < self.radius:
-                    self.grabbed = closest[0]
-            if self.grabbed != None:
-                mouse = Vector(game.mouse.get_pos()[0], game.mouse.get_pos()[1])
-                xy = pixel_to_world(mouse, self.world)
-                mouse = Vector(xy[0], xy[1])
-                force = (mouse - self.grabbed.position) * self.strength
-                self.grabbed.ApplyImpulse(force)
-        else:
-            self.grabbed = None
+        keys = game.key.get_pressed()
+        if keys[game.K_UP]:
+            self.world.manipulator.move(0.0, 0.01)
+        if keys[game.K_DOWN]:
+            self.world.manipulator.move(0.0, -0.01)
+
+        # if game.mouse.get_pressed()[0]:
+        #     if self.grabbed == None:
+        #         closest = self.ClosestPoint()
+        #         if closest[1] < self.radius:
+        #             self.grabbed = closest[0]
+        #     if self.grabbed != None:
+        #         mouse = Vector(game.mouse.get_pos()[0], game.mouse.get_pos()[1])
+        #         xy = pixel_to_world(mouse, self.world)
+        #         mouse = Vector(xy[0], xy[1])
+        #
+        #         print('mouse   {} {}'.format(mouse.x, mouse.y))
+        #         print('grabbed {} {}'.format(self.grabbed.position.x, self.grabbed.position.y))
+        #         force = (mouse - self.grabbed.position) * self.strength
+        #         self.grabbed.ApplyImpulse(force)
+        # else:
+        #     self.grabbed = None
 
         if game.key.get_pressed()[game.K_ESCAPE]:
             self.Exit()
@@ -95,17 +112,15 @@ class DemoBlob(App):
         pos = world_to_pixel(Vector(-1, 1), self.world)
         game.draw.circle(self.screen, (255, 0, 0), pos, 10, 0)
 
-        self.manipulator.render(self.screen, lambda pos: world_to_pixel(pos, self.world))
+        self.world.manipulator.render(self.screen, lambda pos: world_to_pixel(pos, self.world))
 
         game.display.update()
 
     #
     def ClosestPoint(self):
         mouse    = Vector(game.mouse.get_pos()[0], game.mouse.get_pos()[1])
-        print('mouse {} {}'.format(mouse.x, mouse.y))
         xy = pixel_to_world(mouse, self.world)
         mouse = Vector(xy[0], xy[1])
-        print(xy)
         closest  = None
         distance = float('inf')
         for particle in self.world.particles:
